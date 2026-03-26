@@ -2,6 +2,7 @@ openapi: 3.0.3
 info:
   title: API de Orquestacion de Credito
   description: API para la gestion del flujo de credito, desde la identificacion del cliente hasta la formalizacion.
+  documentacion: https://docs.google.com/document/d/1BRZbFu0P25ZCTOkEyILTLDEIxTnRH_18rP8qx-_Plr4/edit?tab=t.r7bacs46nixe
   version: 1.0.0
   contact:
     name: Soporte API
