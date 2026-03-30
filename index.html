@@ -1,29 +1,369 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API de Orquestacion de Credito</title>
-  <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui.css">
-  <style>
-    body { margin: 0; padding: 0; }
-    .swagger-ui .topbar { display: none; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API de Orquestación de Crédito - FLEX</title>
+    
+    <!-- Swagger UI Styles -->
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <link rel="icon" type="image/png" href="https://unpkg.com/swagger-ui-dist@5.9.0/favicon-32x32.png" sizes="32x32" />
+    
+    <!-- Mermaid Styles -->
+    <style>
+        /* Custom Styles for Swagger UI */
+        .swagger-ui .topbar {
+            background-color: #1a1a2e;
+        }
+        
+        .swagger-ui .topbar .download-url-wrapper input[type=text] {
+            border: 2px solid #4a90d9;
+        }
+        
+        .swagger-ui .topbar .download-url-wrapper .download-url-button {
+            background-color: #4a90d9;
+        }
+        
+        .swagger-ui .info .title {
+            color: #1a1a2e;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .swagger-ui .info .description {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        
+        /* Mermaid Diagram Container */
+        .mermaid-container {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        
+        .mermaid-container h4 {
+            color: #1a1a2e;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+        
+        /* Flow Step Indicators */
+        .flow-step {
+            display: inline-block;
+            background-color: #4a90d9;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .flow-step.completed {
+            background-color: #28a745;
+        }
+        
+        .flow-step.pending {
+            background-color: #ffc107;
+            color: #1a1a2e;
+        }
+        
+        .flow-step.failed {
+            background-color: #dc3545;
+        }
+        
+        /* Error Code Badges */
+        .error-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+        
+        .error-400 { background-color: #ffc107; color: #1a1a2e; }
+        .error-401 { background-color: #dc3545; color: white; }
+        .error-404 { background-color: #6c757d; color: white; }
+        .error-500 { background-color: #dc3545; color: white; }
+        
+        /* Info Boxes */
+        .info-box {
+            background-color: #e7f3ff;
+            border-left: 4px solid #4a90d9;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        .success-box {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        
+        /* Flow Diagram Container */
+        .flow-diagram {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 8px;
+            margin: 20px 0;
+            color: white;
+        }
+        
+        .flow-diagram h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .mermaid-container {
+                padding: 10px;
+            }
+            
+            .flow-step {
+                display: block;
+                margin: 5px 0;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-bundle.js"></script>
-  <script src="https://unpkg.com/swagger-ui-dist@5.10.0/swagger-ui-standalone-preset.js"></script>
-  <script>
-    window.onload = function() {
-      SwaggerUIBundle({
-        url: './swagger-FLEX.yaml',
-        dom_id: '#swagger-ui',
-        presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
-        layout: 'StandaloneLayout',
-        deepLinking: true
-      });
-    };
-  </script>
+    <!-- Swagger UI Container -->
+    <div id="swagger-ui"></div>
+    
+    <!-- Swagger UI Bundle -->
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    
+    <!-- Initialize Swagger UI and Mermaid -->
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis'
+            },
+            sequence: {
+                useMaxWidth: true,
+                diagramMarginX: 50,
+                diagramMarginY: 10,
+                actorMargin: 50,
+                width: 150,
+                height: 65,
+                boxMargin: 10,
+                boxTextMargin: 5,
+                noteMargin: 10,
+                messageMargin: 35,
+                messageAlign: 'center'
+            }
+        });
+        
+        // Wait for DOM to be ready
+        window.onload = function() {
+            // Initialize Swagger UI
+            const ui = SwaggerUIBundle({
+                url: "swagger-FLEX.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                validatorUrl: null,
+                docExpansion: "list",
+                filter: true,
+                showExtensions: true,
+                showCommonExtensions: true,
+                defaultModelsExpandDepth: 2,
+                defaultModelExpandDepth: 2,
+                onComplete: function() {
+                    console.log('Swagger UI loaded successfully');
+                    // Re-render Mermaid diagrams after Swagger UI completes
+                    setTimeout(() => {
+                        mermaid.init();
+                    }, 500);
+                },
+                requestInterceptor: function(request) {
+                    // Add custom headers if needed
+                    // request.headers['Authorization'] = 'Bearer YOUR_TOKEN';
+                    return request;
+                },
+                responseInterceptor: function(response) {
+                    return response;
+                }
+            });
+            
+            // Store UI instance globally
+            window.ui = ui;
+            
+            // Add custom information panel
+            addInfoPanel();
+        };
+        
+        // Add Custom Info Panel with Flow Diagram
+        function addInfoPanel() {
+            const infoPanel = document.createElement('div');
+            infoPanel.innerHTML = `
+                <div class="flow-diagram">
+                    <h3>🔄 Flujo Completo de Onboarding</h3>
+                    <div class="mermaid-container">
+                        <div class="mermaid">
+sequenceDiagram
+    participant Cliente
+    participant Canal as Canal Digital
+    participant API as API FLEX
+    participant Risk as Motor Riesgo
+    participant CRM as CRM Agente
+    participant Incode
+    participant ViaFirma
+    participant Core as Core Bancario
+    
+    Note over Cliente,Core: FASE 1: Inicio Autónomo (Web/Chatbot)
+    Cliente->>Canal: Ingresa Cédula, Email, Teléfono
+    Canal->>API: POST /customer/uuid
+    API->>Risk: Validar Score y Blacklist
+    Risk-->>API: UUID + Oferta Pre-aprobada
+    API-->>Canal: person_uuid + required_steps
+    Canal->>Cliente: Muestra Oferta Comercial
+    
+    Note over Cliente,Core: FASE 2: Recuperación CRM
+    CRM->>API: GET /customer/uuid?cedula=xxx
+    API-->>CRM: person_uuid
+    CRM->>API: GET /customer/{uuid}/general_status
+    API-->>CRM: steps[] + next_step
+    CRM->>API: GET /customer/{uuid}/application/offer
+    API-->>CRM: max_amount, tna, plazos
+    
+    Note over Cliente,Core: FASE 3: Completar Pasos
+    CRM->>API: POST /application/product
+    API-->>CRM: Producto Guardado
+    CRM->>API: POST /onboarding/kyc
+    API->>Incode: Generar Sesión
+    Incode-->>API: kyc_url
+    API-->>CRM: URL para Cliente
+    CRM->>API: POST /application/bank_account
+    API-->>CRM: Cuenta Registrada
+    CRM->>API: POST /application/referrals
+    API-->>CRM: Referidos Guardados
+    CRM->>API: POST /application/imei_lock
+    API-->>CRM: Garantía Registrada
+    
+    Note over Cliente,Core: FASE 4: Formalización
+    CRM->>API: POST /sign
+    API->>ViaFirma: Crear Contrato
+    ViaFirma-->>API: sign_url
+    API-->>CRM: URL de Firma
+    Cliente->>ViaFirma: Firma Digital
+    ViaFirma-->>API: Webhook Confirmación
+    CRM->>API: POST /application/checkout
+    API->>Core: Validar Todos los Steps
+    Core-->>API: PENDING_DISBURSEMENT
+    API-->>CRM: ✅ Formalización Exitosa
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="info-box">
+                    <h4>📋 Pasos del Workflow</h4>
+                    <div>
+                        <span class="flow-step">1. IDENTIFICACIÓN</span>
+                        <span class="flow-step">2. OFERTA</span>
+                        <span class="flow-step">3. PRODUCTO</span>
+                        <span class="flow-step">4. KYC</span>
+                        <span class="flow-step">5. BANCO</span>
+                        <span class="flow-step">6. REFERIDOS</span>
+                        <span class="flow-step">7. IMEI</span>
+                        <span class="flow-step">8. FIRMA</span>
+                        <span class="flow-step completed">9. CHECKOUT</span>
+                    </div>
+                </div>
+                
+                <div class="warning-box">
+                    <h4>⚠️ Códigos de Error Importantes</h4>
+                    <p>
+                        <span class="error-badge error-400">400</span>
+                        <strong>Bad Request:</strong> Validación de campos fallida (formato, límites comerciales)
+                    </p>
+                    <p>
+                        <span class="error-badge error-401">401</span>
+                        <strong>Unauthorized:</strong> Cliente no apto por Motor de Riesgo (Low Score)
+                    </p>
+                    <p>
+                        <span class="error-badge error-404">404</span>
+                        <strong>Not Found:</strong> Cliente o solicitud no existe en el sistema
+                    </p>
+                    <p>
+                        <span class="error-badge error-500">500</span>
+                        <strong>Server Error:</strong> Cliente en Blacklist o fallo crítico de sistema
+                    </p>
+                </div>
+                
+                <div class="success-box">
+                    <h4>✅ Reglas de Negocio Clave</h4>
+                    <ul>
+                        <li><strong>Cliente Pre-existente:</strong> El CRM solo recupera leads iniciados en canales digitales</li>
+                        <li><strong>Source of Truth:</strong> El campo <code>next_step</code> determina qué pantalla mostrar</li>
+                        <li><strong>Required Steps:</strong> Iterar el array <code>required_steps</code> para habilitar módulos</li>
+                        <li><strong>Checkout Bloqueado:</strong> No permite formalizar si hay pasos en estado != Success</li>
+                        <li><strong>Oferta Vigente:</strong> 30 días de validez desde la generación del scoring</li>
+                    </ul>
+                </div>
+            `;
+            
+            // Insert before swagger-ui
+            const swaggerUi = document.getElementById('swagger-ui');
+            swaggerUi.parentNode.insertBefore(infoPanel, swaggerUi);
+        }
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+K or Cmd+K to focus search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                const searchInput = document.querySelector('.swagger-ui .filter-container input');
+                if (searchInput) {
+                    searchInput.focus();
+                }
+            }
+            
+            // Ctrl+R or Cmd+R to refresh
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                window.ui.specActions.download();
+            }
+        });
+    </script>
 </body>
 </html>
