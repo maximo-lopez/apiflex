@@ -56,71 +56,6 @@
             justify-content: center;
         }
         
-        /* Flow Step Indicators */
-        .flow-step {
-            display: inline-block;
-            background-color: #4a90d9;
-            color: white;
-            padding: 8px 16px;
-            border-radius: 20px;
-            margin: 5px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .flow-step.completed {
-            background-color: #28a745;
-        }
-        
-        .flow-step.pending {
-            background-color: #ffc107;
-            color: #1a1a2e;
-        }
-        
-        .flow-step.failed {
-            background-color: #dc3545;
-        }
-        
-        /* Error Code Badges */
-        .error-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-right: 8px;
-        }
-        
-        .error-400 { background-color: #ffc107; color: #1a1a2e; }
-        .error-401 { background-color: #dc3545; color: white; }
-        .error-404 { background-color: #6c757d; color: white; }
-        .error-500 { background-color: #dc3545; color: white; }
-        
-        /* Info Boxes */
-        .info-box {
-            background-color: #e7f3ff;
-            border-left: 4px solid #4a90d9;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 0 4px 4px 0;
-        }
-        
-        .warning-box {
-            background-color: #fff3cd;
-            border-left: 4px solid #ffc107;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 0 4px 4px 0;
-        }
-        
-        .success-box {
-            background-color: #d4edda;
-            border-left: 4px solid #28a745;
-            padding: 15px;
-            margin: 15px 0;
-            border-radius: 0 4px 4px 0;
-        }
-        
         /* Flow Diagram Container */
         .flow-diagram {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -135,25 +70,10 @@
             text-align: center;
         }
         
-        /* Phase Indicators */
-        .phase-indicator {
-            background-color: rgba(255,255,255,0.2);
-            padding: 10px 20px;
-            border-radius: 20px;
-            display: inline-block;
-            margin: 10px 5px;
-            font-size: 13px;
-        }
-        
         /* Responsive */
         @media (max-width: 768px) {
             .mermaid-container {
                 padding: 10px;
-            }
-            
-            .flow-step {
-                display: block;
-                margin: 5px 0;
             }
         }
     </style>
@@ -247,201 +167,90 @@
             const infoPanel = document.createElement('div');
             infoPanel.innerHTML = `
                 <div class="flow-diagram">
-                    <h3>🔄 Flujo Completo de Onboarding - 12 Pasos (Según PDF)</h3>
-                    
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <span class="phase-indicator">📍 FASE 1: Identificación (Pasos 1-3)</span>
-                        <span class="phase-indicator">⚙️ FASE 2: Configuración (Pasos 4-5)</span>
-                        <span class="phase-indicator">🔐 FASE 3: Validación (Pasos 6-10)</span>
-                        <span class="phase-indicator">✍️ FASE 4: Formalización (Pasos 11-12)</span>
-                    </div>
+                    <h3>🔄 Flujo Onboarding</h3>
                     
                     <div class="mermaid-container">
                         <div class="mermaid">
 sequenceDiagram
     autonumber
-    participant CRM as CRM Agente
-    participant API as API FLEX
-    participant Risk as Motor Riesgo
-    participant Incode as Incode KYC
-    participant Bank as Core Bancario
-    participant ViaFirma as ViaFirma
+    participant AG as Agente CRM
+    participant API as API Gateway Zenziya
+    participant CDB as Customer DB
+    participant INC as Incode (KYC)
+    participant VF as ViaFirma (Contrato)
+    participant CORE as Core Bancario
     
-    Note over CRM,ViaFirma: FASE 1: IDENTIFICACIÓN (Pasos 1-3)
+    AG->>API: GET /customer/cedula/{cedula}/country/{country}
+    API->>CDB: Validar Cédula y Riesgo
+    CDB-->>API: person_uuid o Error 401/404/500
+    API-->>AG: UUID o Mensaje de Error
     
-    CRM->>API: PASO 1: GET /customer/cedula/{cedula}/country/{country_code}
-    API->>Risk: Validar Score y Blacklist
-    Risk-->>API: person_uuid + Estado
-    API-->>CRM: 200 OK - UUID del Cliente
+    AG->>API: GET /customer/{uuid}/application/general_status
+    API->>CDB: Obtener Steps y next_step
+    CDB-->>API: Array de steps + estado
+    API-->>AG: Estado del Workflow
     
-    CRM->>API: PASO 2: GET /customer/{uuid}/application/general_status
-    API-->>CRM: 200 OK - steps[], next_step, application_type
+    AG->>API: GET /customer/{uuid}/application/offer
+    API->>CDB: Obtener oferta pre-aprobada
+    CDB-->>API: max_amount, min_amount, TNA, cuotas
+    API-->>AG: Oferta Comercial
     
-    CRM->>API: PASO 3: GET /customer/{uuid}/application/offer
-    API-->>CRM: 200 OK - max_amount, min_amount, tna, required_steps[]
+    AG->>API: GET /customer/{uuid}/application/offer/simulation
+    API->>CORE: Calcular plan de pagos
+    CORE-->>API: Tabla de amortización
+    API-->>AG: Plan de Pagos Detallado
     
-    Note over CRM,ViaFirma: FASE 2: CONFIGURACIÓN DE PRODUCTO (Pasos 4-5)
+    AG->>API: POST /customer/{uuid}/application/product
+    API->>CDB: Guardar selección de producto
+    CDB-->>API: selected_amount, fees, principal
+    API-->>AG: Confirmación Product Selection
     
-    CRM->>API: PASO 4: GET /customer/{uuid}/application/offer/simulation?amount=X&installments=Y
-    API-->>CRM: 200 OK - plan_pagos[] (capital, interest, iva, total)
+    AG->>API: POST /customer/{uuid}/onboarding/kyc
+    API->>INC: Generar sesión biométrica
+    INC-->>API: kyc_url
+    API-->>AG: Link para cliente
     
-    CRM->>API: PASO 5: POST /customer/{uuid}/application/product
-    Note right of API: Valida límites de oferta, guarda plan de pagos
-    API-->>CRM: 200 OK - selected_amount, fees, principal_amount, installment_amount
+    Note over AG,INC: Cliente completa biometría
     
-    Note over CRM,ViaFirma: FASE 3: VALIDACIÓN Y DATOS (Pasos 6-10)
+    INC->>API: Webhook - Resultado KYC
+    API->>CDB: Actualizar estado KYC
+    CDB-->>API: Success/DoRetry
     
-    CRM->>API: PASO 6: POST /customer/{uuid}/onboarding/kyc
-    API->>Incode: Generar Sesión Biométrica
-    Incode-->>API: kyc_url
-    API-->>CRM: 200 OK - URL para cliente
+    AG->>API: GET /bank
+    API-->>AG: Catálogo de Bancos
     
-    CRM->>API: PASO 7: GET /bank
-    API-->>CRM: 200 OK - banks[] (id, name, validation_regex)
+    AG->>API: POST /customer/{uuid}/application/bank_account
+    API->>CDB: Validar y guardar cuenta
+    CDB-->>API: bank_account_id
+    API-->>AG: Cuenta Registrada
     
-    CRM->>API: PASO 8: POST /customer/{uuid}/application/bank_account
-    Note right of API: Valida regex de cuenta según banco
-    API->>Bank: Verificar cuenta
-    Bank-->>API: Cuenta válida
-    API-->>CRM: 200 OK - bank_account_id
+    AG->>API: POST /customer/{uuid}/application/referrals
+    API->>CDB: Guardar referidos
+    CDB-->>API: Status OK
+    API-->>AG: Referidos Guardados
     
-    CRM->>API: PASO 9: POST /customer/{uuid}/application/referrals
-    Note right of API: Procesa duplicados inteligentemente
-    API-->>CRM: 200 OK - Referidos vinculados
+    AG->>API: POST /customer/{uuid}/application/imei_lock
+    API->>CORE: Registrar dispositivo Samsung Knox
+    CORE-->>API: IMEI bloqueado
+    API-->>AG: Garantía Registrada
     
-    CRM->>API: PASO 10: POST /customer/{uuid}/application/imei_lock
-    Note right of API: Registra dispositivo como garantía (Samsung Knox)
-    API-->>CRM: 200 OK - IMEIs bloqueados
+    AG->>API: POST /customer/{uuid}/sign
+    API->>VF: Generar contrato y sesión
+    VF-->>API: sign_url, signature_id
+    API-->>AG: Link de Firma
     
-    Note over CRM,ViaFirma: FASE 4: FORMALIZACIÓN (Pasos 11-12)
+    Note over AG,VF: Cliente firma contrato
     
-    CRM->>API: PASO 11: POST /customer/{uuid}/sign
-    API->>ViaFirma: Compilar y enviar contrato
-    ViaFirma-->>API: sign_url
-    API-->>CRM: 200 OK - URL de firma digital
+    VF->>API: Webhook - Firma Completada
+    API->>CDB: is_contract_signed = true
+    CDB-->>API: ACCEPTED
     
-    Note over CRM,ViaFirma: Cliente firma en ViaFirma → Webhook confirma
-    
-    CRM->>API: PASO 12: POST /customer/{uuid}/application/checkout
-    API->>API: Validar todos los steps = Success
-    alt Todos los pasos completados
-        API-->>CRM: 200 OK - status: PENDING_DISBURSEMENT
-    else Hay pasos incompletos
-        API-->>CRM: 400 Bad Request - steps faltantes: KYC, REFERRALS...
-    end
-    
-    Note over CRM,ViaFirma: ✅ FLUJO COMPLETADO - Listo para desembolso
+    AG->>API: POST /customer/{uuid}/application/checkout
+    API->>CDB: Validar todos los pasos SUCCESS
+    CDB-->>API: PENDING_DISBURSEMENT
+    API-->>AG: Formalización Exitosa
                         </div>
                     </div>
-                </div>
-                
-                <div class="info-box">
-                    <h4>📋 Los 12 Pasos del Onboarding (Orden Oficial PDF)</h4>
-                    <div>
-                        <span class="flow-step">1. GET Cédula→UUID</span>
-                        <span class="flow-step">2. GET General Status</span>
-                        <span class="flow-step">3. GET Oferta</span>
-                        <span class="flow-step">4. GET Simulación</span>
-                        <span class="flow-step">5. POST Producto</span>
-                        <span class="flow-step">6. POST KYC</span>
-                        <span class="flow-step">7. GET Bancos</span>
-                        <span class="flow-step">8. POST Cuenta</span>
-                        <span class="flow-step">9. POST Referidos</span>
-                        <span class="flow-step">10. POST IMEI</span>
-                        <span class="flow-step">11. POST Firma</span>
-                        <span class="flow-step completed">12. POST Checkout</span>
-                    </div>
-                </div>
-                
-                <div class="warning-box">
-                    <h4>⚠️ Diccionario de Errores HTTP (Según PDF)</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="background-color: #f8f9fa;">
-                            <th style="padding: 10px; text-align: left; border: 1px solid #dee2e6;">Código</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #dee2e6;">Categoría</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #dee2e6;">Causa Principal</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #dee2e6;">Acción CRM</th>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><span class="error-badge error-400">400</span></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Bad Request</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Fallo validación de campos (formato)</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Mostrar campos inválidos</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><span class="error-badge error-401">401</span></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Unauthorized</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Rechazo por Motor de Riesgo (Low Score)</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">"Cliente no apto para crédito"</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><span class="error-badge error-404">404</span></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Not Found</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Recurso no encontrado (Lead inexistente)</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">"Debe iniciar vía canales digitales"</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><span class="error-badge error-500">500</span></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Server Error</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Cliente en Blacklist o fallo crítico</td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">"Comuníquese al supervisor (Ref: BL-Check)"</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div class="success-box">
-                    <h4>✅ Reglas de Negocio Clave (PDF)</h4>
-                    <ul>
-                        <li><strong>Cliente Pre-existente:</strong> El CRM solo recupera leads iniciados en canales digitales (Web/Chatbot). No crea clientes desde cero.</li>
-                        <li><strong>Source of Truth:</strong> El campo <code>next_step</code> del GET /general_status determina qué pantalla mostrar al asesor.</li>
-                        <li><strong>Required Steps:</strong> Iterar el array <code>required_steps</code> del GET /offer para habilitar módulos dinámicamente.</li>
-                        <li><strong>Checkout Bloqueado:</strong> POST /checkout verifica que TODOS los pasos estén en estado Success antes de permitir formalización.</li>
-                        <li><strong>Oferta Vigente:</strong> 30 días de validez desde la generación del scoring. Después expira y requiere nuevo scoring.</li>
-                        <li><strong>Producto Duplicado:</strong> POST /product permite re-envío. El sistema elimina el producto anterior y cancela sesiones de firma colgadas.</li>
-                        <li><strong>Contrato Firmado:</strong> Si <code>is_contract_signed = true</code>, bloquear selectores de producto. Devuelve: "No se puede registrar. El contrato ya está firmado".</li>
-                    </ul>
-                </div>
-                
-                <div class="info-box">
-                    <h4>🔧 Contingencias Soportadas (Backoffice)</h4>
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <tr style="background-color: #f8f9fa;">
-                            <th style="padding: 10px; text-align: left; border: 1px solid #dee2e6;">API</th>
-                            <th style="padding: 10px; text-align: left; border: 1px solid #dee2e6;">Propósito</th>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>POST /contact_channel/{phone|email}</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Actualizar contacto del cliente</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>POST /onboarding/kyc/manual</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Bypass KYC automático (Incode falla)</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>GET/PUT /onboarding/kyc/manual/{id}/urls</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Subir evidencia manual (fotos + video)</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>DELETE /contract/sign</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Anular firma para cambiar oferta</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>POST/PUT /sign/file_url</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Firma manual en papel (PDF escaneado)</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>POST /sign/fetch</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Sincronización forzada con ViaFirma</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>POST /application/{reject|withdraw}</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Finalizar solicitud (rechazo o desistimiento)</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;"><code>PUT /application/step/{step_name}</code></td>
-                            <td style="padding: 10px; border: 1px solid #dee2e6;">Bypass de workflow (inyectar estado Success)</td>
-                        </tr>
-                    </table>
                 </div>
             `;
             
