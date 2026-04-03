@@ -180,32 +180,32 @@ sequenceDiagram
     participant VF as ViaFirma (Contrato)
     participant CORE as Core Bancario
     
-    AG->>API: GET /customer/cedula/{cedula}/country/{country}
+    AG->>API: GET https://{{apiv1_domain}}/customer/cedula/{{cedula}}/country/{{country_code}}
     API->>CDB: Validar Cédula y Riesgo
     CDB-->>API: person_uuid o Error 401/404/500
     API-->>AG: UUID o Mensaje de Error
     
-    AG->>API: GET /customer/{uuid}/application/general_status
+    AG->>API: GET https://{{apiv1_domain}}/customer/{{customer_uuid}}/general_status
     API->>CDB: Obtener Steps y next_step
     CDB-->>API: Array de steps + estado
     API-->>AG: Estado del Workflow
     
-    AG->>API: GET /customer/{uuid}/application/offer
+    AG->>API: GET https://{{apiv1_domain}}/customer/{{customer_uuid}}/application/offer
     API->>CDB: Obtener oferta pre-aprobada
     CDB-->>API: max_amount, min_amount, TNA, cuotas
     API-->>AG: Oferta Comercial
     
-    AG->>API: GET /customer/{uuid}/application/offer/simulation
+    AG->>API: GET https://{{apiv1_domain}}/customer/{{customer_uuid}}/application/offer/simulation
     API->>CORE: Calcular plan de pagos
     CORE-->>API: Tabla de amortización
     API-->>AG: Plan de Pagos Detallado
     
-    AG->>API: POST /customer/{uuid}/application/product
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/application/product
     API->>CDB: Guardar selección de producto
     CDB-->>API: selected_amount, fees, principal
     API-->>AG: Confirmación Product Selection
     
-    AG->>API: POST /customer/{uuid}/onboarding/kyc
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/onboarding/kyc
     API->>INC: Generar sesión biométrica
     INC-->>API: kyc_url
     API-->>AG: Link para cliente
@@ -216,25 +216,25 @@ sequenceDiagram
     API->>CDB: Actualizar estado KYC
     CDB-->>API: Success/DoRetry
     
-    AG->>API: GET /bank
+    AG->>API: GET https://{{apiv1_domain}}/bank/
     API-->>AG: Catálogo de Bancos
     
-    AG->>API: POST /customer/{uuid}/application/bank_account
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/bank_account
     API->>CDB: Validar y guardar cuenta
     CDB-->>API: bank_account_id
     API-->>AG: Cuenta Registrada
     
-    AG->>API: POST /customer/{uuid}/application/referrals
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/application/referrals
     API->>CDB: Guardar referidos
     CDB-->>API: Status OK
     API-->>AG: Referidos Guardados
     
-    AG->>API: POST /customer/{uuid}/application/imei_lock
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/application/imei_lock
     API->>CORE: Registrar dispositivo Samsung Knox
     CORE-->>API: IMEI bloqueado
     API-->>AG: Garantía Registrada
     
-    AG->>API: POST /customer/{uuid}/sign
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/sign
     API->>VF: Generar contrato y sesión
     VF-->>API: sign_url, signature_id
     API-->>AG: Link de Firma
@@ -245,7 +245,7 @@ sequenceDiagram
     API->>CDB: is_contract_signed = true
     CDB-->>API: ACCEPTED
     
-    AG->>API: POST /customer/{uuid}/application/checkout
+    AG->>API: POST https://{{apiv1_domain}}/customer/{{customer_uuid}}/application/checkout
     API->>CDB: Validar todos los pasos SUCCESS
     CDB-->>API: PENDING_DISBURSEMENT
     API-->>AG: Formalización Exitosa
