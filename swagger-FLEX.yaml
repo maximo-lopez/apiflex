@@ -1,59 +1,50 @@
 openapi: 3.0.3
 info:
-  title: Swagger - Introducción al Ecosistema de Onboarding
-  description: API para la gestion del flujo de credito, desde la identificacion del cliente hasta la formalizacion.
-  version: 1.0.0
-externalDocs:
-  description: Documentación del Proceso de Onboarding
-  url: https://docs.google.com/document/d/1BRZbFu0P25ZCTOkEyILTLDEIxTnRH_18rP8qx-_Plr4/edit?usp=sharing
+  title: Zenziya Onboarding API
+  description: |
+    Introducción al Ecosistema de Onboarding
+
+    📄 Documento funcional:
+    [Ver documento](https://docs.google.com/document/d/1BRZbFu0P25ZCTOkEyILTLDEIxTnRH_18rP8qx-_Plr4/edit?tab=t.r7bacs46nixe)
+  version: 2.0.0
+
 servers:
-  - url: http://localhost:8080/api/v1
-    description: Servidor de Desarrollo
-  - url: https://api.miempresa.com/api/v1
-    description: Servidor de Produccion
+  - url: https://apiv1.dev.zenziya.com
+
 tags:
-  - name: 01-Identificacion
-    description: Identificacion y recuperacion de datos iniciales
-  - name: 02-Configuracion-Producto
-    description: Simulacion y seleccion de oferta comercial
-  - name: 03-Validacion-Identidad-KYC
-    description: Validacion biometrica automatica y manual
-  - name: 04-Cuenta-Bancaria
-    description: Gestion de bancos y cuentas de desembolso
-  - name: 05-Workflow-Core
-    description: Referidos, garantias y formalizacion
-  - name: 06-Firma-Contrato
-    description: Gestion de firma digital y manual
-  - name: 07-Contingencias-Gestion
-    description: Actualizacion de datos, cancelaciones y bypass de workflow
-security:
-  - bearerAuth: []
+  - name: Lead
+  - name: Application
+  - name: Offer
+  - name: Simulation
+  - name: Product
+  - name: KYC
+  - name: Bank
+  - name: Referrals
+  - name: IMEI_LOCK
+  - name: Contract
+  - name: Checkout
+
 paths:
+
   /customer/cedula/{cedula}/country/{country_code}:
     get:
-      tags:
-        - 01-Identificacion
-      summary: Identificacion del Cliente
-      description: Traduce la cedula al UUID unico del cliente.
+      tags: [Lead]
+      summary: Obtener UUID del cliente
       parameters:
         - name: cedula
           in: path
           required: true
           schema:
             type: string
-            pattern: '^[0-9]{1,11}$'
-            example: "00100000000"
-          description: Documento de identidad (max 11 digitos, puede incluir ceros a la izquierda).
         - name: country_code
           in: path
           required: true
           schema:
             type: string
-            default: "DO"
-          description: Codigo de pais.
+            example: DO
       responses:
-        '200':
-          description: UUID encontrado
+        "200":
+          description: UUID obtenido
           content:
             application/json:
               schema:
@@ -61,112 +52,83 @@ paths:
                 properties:
                   person_uuid:
                     type: string
-                    format: uuid
-                    example: "550e8400-e29b-41d4-a716-446655440000"
-        '400':
-          description: Fallo de validacion - Cedula invalida
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '401':
-          description: Rechazo por Motor de Riesgo - Low Score
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Lead Inexistente - No hay solicitud iniciada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Blacklisted - Bloqueo por fraude o lista negra
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/general_status:
+        "400":
+          description: Cédula inválida
+        "401":
+          description: Cliente no apto
+        "404":
+          description: No encontrado
+        "500":
+          description: Blacklist / error interno
+
+  /customer/{customer_uuid}/general_status:
     get:
-      tags:
-        - 01-Identificacion
-      summary: Recuperacion de la Solicitud
-      description: Obtiene el estado actual, pasos completados y progreso de la solicitud.
+      tags: [Application]
+      summary: Obtener estado general del cliente
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
-          description: Detalles de la aplicacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApplicationStatus'
-        '400':
-          description: Fallo de formato - person_uuid invalido
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Sin solicitud activa o expirada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Falla de integracion - Error en capa de abstraccion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/offer:
+        "200":
+          description: Estado del workflow
+        "400":
+          description: UUID inválido
+        "404":
+          description: Sin solicitud activa
+        "500":
+          description: Error interno
+
+  /customer/{customer_uuid}/application/offer:
     get:
-      tags:
-        - 01-Identificacion
-      summary: Recuperacion de Oferta Pre-aprobada
-      description: Obtiene limites comerciales dictaminados por el motor de riesgo.
+      tags: [Offer]
+      summary: Obtener oferta pre-aprobada
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       responses:
-        '200':
-          description: Oferta comercial
+        "200":
+          description: Oferta disponible
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PreApprovedOffer'
-        '400':
-          description: Fallo de formato - person_uuid invalido
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Sin oferta vigente - Rechazo previo o expirada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Falla de infraestructura - Error en API Gateway o Camel
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/offer/simulation:
+                type: object
+                properties:
+                  max_amount:
+                    type: number
+                  min_amount:
+                    type: number
+                  max_installments:
+                    type: integer
+                  min_installments:
+                    type: integer
+                  tna:
+                    type: number
+        "404":
+          description: Sin oferta vigente
+        "500":
+          description: Error interno
+
+  /customer/{customer_uuid}/application/offer/simulation:
     get:
-      tags:
-        - 02-Configuracion-Producto
-      summary: Simulacion de Prestamo
-      description: Proyecta el plan de pagos exacto segun parametros ingresados.
+      tags: [Simulation]
+      summary: Simular préstamo
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
         - name: amount
           in: query
           required: true
           schema:
             type: number
-            format: float
         - name: installments
           in: query
           required: true
@@ -174,311 +136,115 @@ paths:
             type: integer
         - name: frequency
           in: query
-          required: true
           schema:
             type: string
-            enum:
-              - monthly
-              - biweekly
+            enum: [monthly, biweekly]
         - name: first_due_date
           in: query
-          required: true
           schema:
             type: string
             format: date
       responses:
-        '200':
-          description: Plan de pagos simulado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  plan_pagos:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/InstallmentDetail'
-        '400':
-          description: Fallo de validacion tecnica o limites comerciales
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '404':
-          description: Sin oferta base para simular
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Falla de calculo - Error en proyeccion matematica
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/product:
+        "200":
+          description: Plan de pagos
+        "400":
+          description: Parámetros inválidos
+        "422":
+          description: Límites comerciales excedidos
+        "404":
+          description: Sin oferta
+        "500":
+          description: Error de cálculo
+
+  /customer/{customer_uuid}/application/product:
     post:
-      tags:
-        - 02-Configuracion-Producto
-      summary: Registro de Seleccion de Producto
-      description: Guarda la eleccion definitiva del cliente.
+      tags: [Product]
+      summary: Seleccionar producto
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - amount
-                - installments
-                - frequency
-                - first_due_date
+              required: [amount, installments, frequency, first_due_date]
               properties:
                 amount:
                   type: number
-                  format: float
                 installments:
                   type: integer
                 frequency:
                   type: string
-                  enum:
-                    - monthly
-                    - biweekly
+                  enum: [monthly, biweekly]
                 first_due_date:
                   type: string
                   format: date
       responses:
-        '200':
-          description: Producto guardado exitosamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  selected_amount:
-                    type: number
-                    format: float
-                  fees:
-                    type: number
-                    format: float
-                  principal_amount:
-                    type: number
-                    format: float
-                  installment_amount:
-                    type: number
-                    format: float
-                  installments:
-                    type: integer
-                  frequency:
-                    type: string
-                  first_due_date:
-                    type: string
-                    format: date
-        '400':
-          description: Error de validacion de parametros o bloqueo por contrato firmado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/onboarding/kyc:
+        "200":
+          description: Producto registrado
+        "400":
+          description: Error de validación o contrato firmado
+        "500":
+          description: Error interno
+
+  /customer/{customer_uuid}/onboarding/kyc:
     post:
-      tags:
-        - 03-Validacion-Identidad-KYC
-      summary: Inicio Validacion Biometrica Automatica
-      description: Genera sesion biometrica de Incode.
+      tags: [KYC]
+      summary: Iniciar KYC
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - callback_url
+              required: [callback_url]
               properties:
                 callback_url:
                   type: string
-                  format: uri
       responses:
-        '200':
-          description: URL de KYC generada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  kyc_url:
-                    type: string
-                    format: uri
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/onboarding/kyc/manual:
-    post:
-      tags:
-        - 03-Validacion-Identidad-KYC
-      summary: Inicio Validacion Manual - Contingencia
-      description: Genera frase unica para prueba de vida si Incode falla.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      responses:
-        '200':
-          description: Datos para validacion manual
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  kyc_mode:
-                    type: string
-                    example: "manual"
-                  interview_id:
-                    type: string
-                  validation_phrase:
-                    type: string
-                    example: "El sol brilla en..."
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/onboarding/kyc/manual/{interview_id}/urls:
+        "200":
+          description: Link KYC generado
+        "400":
+          description: Error de validación
+        "500":
+          description: Error proveedor
+
+  /bank/:
     get:
-      tags:
-        - 03-Validacion-Identidad-KYC
-      summary: Obtencion URLs Carga Manual
-      description: Provee URLs pre-firmadas para subir evidencia.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-        - $ref: '#/components/parameters/interview_id'
+      tags: [Bank]
+      summary: Obtener listado de bancos
       responses:
-        '200':
-          description: URLs de almacenamiento
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/KycUploadUrls'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    put:
-      tags:
-        - 03-Validacion-Identidad-KYC
-      summary: Confirmacion Carga Manual
-      description: Avisar que la evidencia se subio a los buckets.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-        - $ref: '#/components/parameters/interview_id'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                success:
-                  type: boolean
-                  example: true
-      responses:
-        '200':
-          description: Confirmacion de avance
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /bank:
-    get:
-      tags:
-        - 04-Cuenta-Bancaria
-      summary: Consultar Catalogo de Bancos
-      description: Lista de bancos soportados y reglas de validacion.
-      parameters:
-        - name: page
-          in: query
-          schema:
-            type: integer
-        - name: size
-          in: query
-          schema:
-            type: integer
-      responses:
-        '200':
+        "200":
           description: Lista de bancos
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  banks:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Bank'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/bank_account:
-    get:
-      tags:
-        - 04-Cuenta-Bancaria
-      summary: Consultar Cuentas Registradas
-      description: Lista cuentas historicas del cliente.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      responses:
-        '200':
-          description: Lista de cuentas
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  accounts:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/BankAccount'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/bank_account:
+
+  /customer/{customer_uuid}/bank_account:
     post:
-      tags:
-        - 04-Cuenta-Bancaria
-      summary: Registro de Cuenta Bancaria
-      description: Guarda la cuenta del desembolso.
+      tags: [Bank]
+      summary: Registrar cuenta bancaria
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required:
-                - bank_id
-                - account_number
-                - account_type
+              required: [bank_id, account_number, account_type]
               properties:
                 bank_id:
                   type: integer
@@ -486,36 +252,25 @@ paths:
                   type: string
                 account_type:
                   type: string
-                  enum:
-                    - CA
-                    - CC
+                  enum: [CC, CA]
       responses:
-        '200':
-          description: Registro exitoso
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "success"
-                  bank_account_id:
-                    type: integer
-        '400':
-          description: Error de validacion - Regex o formato invalido
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/referrals:
+        "200":
+          description: Cuenta registrada
+        "400":
+          description: Error validación
+        "500":
+          description: Error interno
+
+  /customer/{customer_uuid}/application/referrals:
     post:
-      tags:
-        - 05-Workflow-Core
-      summary: Registro de Referidos
-      description: Guarda contactos de referencia personal.
+      tags: [Referrals]
+      summary: Registrar referidos
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -527,122 +282,67 @@ paths:
                   type: array
                   items:
                     type: object
-                    required:
-                      - full_name
-                      - phone
+                    required: [full_name, phone]
                     properties:
                       full_name:
                         type: string
                       phone:
                         type: string
-                      relationship:
-                        type: string
-                      address:
-                        type: string
                       email:
                         type: string
       responses:
-        '200':
-          description: Referidos creados
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/imei_lock:
+        "200":
+          description: Referidos registrados
+        "400":
+          description: Error validación
+        "500":
+          description: Error interno
+
+  /customer/{customer_uuid}/application/imei_lock:
     post:
-      tags:
-        - 05-Workflow-Core
-      summary: Registro de Garantia - IMEI Lock
-      description: Registrar y bloquear dispositivo movil como garantia.
+      tags: [IMEI_LOCK]
+      summary: Registrar IMEI
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [imeis, federated]
               properties:
                 imeis:
                   type: array
                   items:
-                    type: object
-                    properties:
-                      imei:
-                        type: string
-                        pattern: '^[0-9]{15}$'
-                      federated:
-                        type: boolean
-      responses:
-        '200':
-          description: Registro exitoso
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '409':
-          description: IMEI ya federado por otro cliente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/checkout:
-    post:
-      tags:
-        - 05-Workflow-Core
-      summary: Formalizacion - Checkout
-      description: Validacion final de todos los pasos obligatorios.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                channel:
-                  type: string
-                  example: "Backoffice"
-      responses:
-        '200':
-          description: Validacion exitosa
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
                     type: string
-                    example: "success"
-        '400':
-          description: Pasos incompletos - No se puede proceder
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/sign:
+                federated:
+                  type: boolean
+      responses:
+        "200":
+          description: IMEI registrado
+        "400":
+          description: Error validación
+        "409":
+          description: IMEI en conflicto
+        "500":
+          description: Error interno
+
+  /customer/{customer_uuid}/sign:
     post:
-      tags:
-        - 06-Firma-Contrato
-      summary: Inicio de Firma Automatica - ViaFirma
-      description: Genera sesion de firma digital.
+      tags: [Contract]
+      summary: Generar contrato
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
+        - name: customer_uuid
+          in: path
+          required: true
+          schema:
+            type: string
       requestBody:
-        required: true
         content:
           application/json:
             schema:
@@ -650,454 +350,38 @@ paths:
               properties:
                 callback_url:
                   type: string
-                  format: uri
                 force_creation:
                   type: boolean
       responses:
-        '200':
+        "200":
           description: URL de firma generada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  sign_url:
-                    type: string
-                  signature_id:
-                    type: string
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/sign/fetch:
+        "400":
+          description: Error de negocio
+        "500":
+          description: Error proveedor
+
+  /customer/{customer_uuid}/application/checkout:
     post:
-      tags:
-        - 06-Firma-Contrato
-      summary: Sincronizacion Forzada de Contrato
-      description: Forzar descarga del contrato si el webhook falla.
+      tags: [Checkout]
+      summary: Formalizar crédito
       parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      responses:
-        '200':
-          description: Sincronizacion exitosa
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/sign/file_url:
-    post:
-      tags:
-        - 06-Firma-Contrato
-      summary: Obtener URL para Firma Manual
-      description: Genera URL pre-firmada para subir PDF firmado fisicamente.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      responses:
-        '200':
-          description: URL de subida
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  upload_url:
-                    type: string
-                    format: uri
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    put:
-      tags:
-        - 06-Firma-Contrato
-      summary: Confirmar Firma Manual
-      description: Notificar que el contrato manual fue cargado.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-        - name: force
-          in: query
-          schema:
-            type: boolean
-      responses:
-        '200':
-          description: Aceptacion confirmada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/contact_channel/phone:
-    post:
-      tags:
-        - 07-Contingencias-Gestion
-      summary: Actualizacion de Celular
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      requestBody:
-        $ref: '#/components/requestBodies/ContactUpdate'
-      responses:
-        '200':
-          description: Actualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/contact_channel/email:
-    post:
-      tags:
-        - 07-Contingencias-Gestion
-      summary: Actualizacion de Correo
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      requestBody:
-        $ref: '#/components/requestBodies/ContactUpdate'
-      responses:
-        '200':
-          description: Actualizado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/contract/sign:
-    delete:
-      tags:
-        - 07-Contingencias-Gestion
-      summary: Cancelar Firma Emitida
-      description: Anular contrato emitido para desbloquear solicitud.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      responses:
-        '200':
-          description: Anulacion exitosa
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/reject:
-    post:
-      tags:
-        - 07-Contingencias-Gestion
-      summary: Forzar Rechazo de Solicitud
-      description: Cancela solicitud por politicas.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-      responses:
-        '200':
-          description: Rechazo confirmado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/withdraw:
-    post:
-      tags:
-        - 07-Contingencias-Gestion
-      summary: Desistimiento de Solicitud
-      description: Cliente se arrepiente del credito.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                reason:
-                  type: string
-      responses:
-        '200':
-          description: Desistimiento confirmado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  /customer/{person_uuid}/application/step/{step_name}:
-    put:
-      tags:
-        - 07-Contingencias-Gestion
-      summary: Forzar Actualizacion Manual de Paso - Bypass
-      description: Permite forzar un paso trabado.
-      parameters:
-        - $ref: '#/components/parameters/person_uuid'
-        - name: step_name
+        - name: customer_uuid
           in: path
           required: true
           schema:
             type: string
-            example: "KYC"
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
-              description: Datos inyectados para el paso
-              additionalProperties: true
+              properties:
+                channel:
+                  type: string
       responses:
-        '200':
-          description: Actualizacion de BD
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validacion
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  parameters:
-    person_uuid:
-      name: person_uuid
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
-      description: Identificador unico del cliente.
-    interview_id:
-      name: interview_id
-      in: path
-      required: true
-      schema:
-        type: string
-      description: Identificador de sesion KYC.
-  requestBodies:
-    ContactUpdate:
-      content:
-        application/json:
-          schema:
-            type: object
-            required:
-              - value
-              - mode
-            properties:
-              value:
-                type: string
-              mode:
-                type: string
-                enum:
-                  - email
-                  - call
-                  - whatsapp
-                  - other
-              verified:
-                type: boolean
-                default: false
-  schemas:
-    StandardResponse:
-      type: object
-      properties:
-        status:
-          type: string
-          example: "success"
-        message:
-          type: string
-    ErrorResponse:
-      type: object
-      properties:
-        error:
-          type: string
-        message:
-          type: string
-        dictum:
-          type: string
-        reason:
-          type: string
-    ApplicationStatus:
-      type: object
-      properties:
-        application_id:
-          type: integer
-        application_type:
-          type: string
-          enum:
-            - Primario
-            - Renovador
-            - Pre-Renovador
-        is_contract_signed:
-          type: boolean
-        is_formalized:
-          type: boolean
-        first_name:
-          type: string
-        last_name:
-          type: string
-        form_phone:
-          type: string
-        form_email:
-          type: string
-        status:
-          type: string
-          enum:
-            - DRAFT
-            - ACCEPTED
-            - REJECTED
-            - PENDING_DISBURSEMENT
-        next_step:
-          type: string
-          example: "KYC"
-        requires_manual_intervention:
-          type: boolean
-        steps:
-          type: array
-          items:
-            type: object
-            properties:
-              name:
-                type: string
-              status:
-                type: string
-                enum:
-                  - Success
-                  - Pending
-                  - Failed
-    PreApprovedOffer:
-      type: object
-      properties:
-        max_amount:
-          type: number
-        min_amount:
-          type: number
-        max_installments:
-          type: integer
-        min_installments:
-          type: integer
-        tna:
-          type: number
-        first_installments:
-          type: object
-          properties:
-            min:
-              type: string
-              format: date
-            max:
-              type: string
-              format: date
-            preferred_date:
-              type: string
-              format: date
-    InstallmentDetail:
-      type: object
-      properties:
-        number:
-          type: integer
-        due_date:
-          type: string
-          format: date
-        amount:
-          type: number
-        interest_amount:
-          type: number
-        tax_amount:
-          type: number
-        capital:
-          type: number
-        interest:
-          type: number
-        iva:
-          type: number
-        total:
-          type: number
-    KycUploadUrls:
-      type: object
-      properties:
-        front_image_url:
-          $ref: '#/components/schemas/UploadUrlObject'
-        back_image_url:
-          $ref: '#/components/schemas/UploadUrlObject'
-        video_url:
-          $ref: '#/components/schemas/UploadUrlObject'
-    UploadUrlObject:
-      type: object
-      properties:
-        upload_url:
-          type: string
-          format: uri
-        resource_url:
-          type: string
-          format: uri
-    Bank:
-      type: object
-      properties:
-        id:
-          type: integer
-        name:
-          type: string
-        validation_regex:
-          type: string
-    BankAccount:
-      type: object
-      properties:
-        id:
-          type: integer
-        bank_name:
-          type: string
-        account_number:
-          type: string
-        account_type:
-          type: string
-          enum:
-            - CA
-            - CC
+        "200":
+          description: Proceso completado
+        "400":
+          description: Pasos incompletos
+        "500":
+          description: Error interno
